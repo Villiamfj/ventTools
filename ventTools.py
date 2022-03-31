@@ -251,3 +251,19 @@ def plot_features_of_breath(df, vent_bn, viz_features, tabel_features = None, sa
     plt.savefig(save_location + str(vent_bn) + ".png")
   
   plt.show()
+
+def get_name_of_mode(number):
+  switcher = {
+   0: "Ventilation Control",
+   1: "Pressure Control",
+   3: "Pressure Support",
+   4: "Continuous positive airway pressure",
+   6: "Proportional assist ventilation"
+  }
+  return switcher.get(number, "ERROR")
+
+
+def add_mode_name(df):
+  new_df = df.copy()
+  new_df["mode_name"] = new_df["y"].apply(get_name_of_mode)
+  return new_df
