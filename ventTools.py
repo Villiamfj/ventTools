@@ -211,7 +211,7 @@ def plot_features_of_breath(df, vent_bn, viz_features, tabel_features = None, sa
     ratios = [1]
 
   # Setting up the subplots
-  fig, axs = plt.subplots(nrows=height, ncols=sub_plot_len, figsize = (10 * sub_plot_len, 5), gridspec_kw={'height_ratios': ratios})
+  fig, axs = plt.subplots(nrows=height, ncols=sub_plot_len, figsize = (10 * sub_plot_len, 10), gridspec_kw={'height_ratios': ratios})
   
   # Getting group breath number
   grouped = df.groupby(["vent_bn"])
@@ -248,6 +248,7 @@ def plot_features_of_breath(df, vent_bn, viz_features, tabel_features = None, sa
                       hspace=0.4)
   
   if save_location != None:
+    plt.tight_layout()
     plt.savefig(save_location + str(vent_bn) + ".png")
   
   plt.show()
