@@ -322,5 +322,3 @@ def group_in_n(df, n, group_key = "vent_bn"):
       tempList = []
       count = 0
   return result
-
-

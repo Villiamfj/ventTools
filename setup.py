@@ -9,8 +9,5 @@ setup(
         'scikit-learn',
         'ventmap',
         "ventmode"
-    ],
-    dependency_links=[
-        "git+https://github.com/hahnicity/ventmode"
     ]
 )
