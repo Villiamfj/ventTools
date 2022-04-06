@@ -1,6 +1,7 @@
 from ventmode import datasets
 import pandas as pd
 from ventmode import constants
+import os
 from os.path import dirname, join
 import matplotlib.pyplot as plt
 from ventmap.raw_utils import extract_raw
@@ -268,3 +269,58 @@ def add_mode_name(df):
   new_df = df.copy()
   new_df["mode_name"] = new_df["y"].apply(get_name_of_mode)
   return new_df
+
+# Loads all the raw data from the path given
+def load_all_raw_data(path):
+  frames = []
+  # Extracting the raw data one at a time
+  for filename in os.listdir(path):
+    with open(path + "/" + filename, encoding='ascii', errors='ignore') as file:
+      data = extract_raw(file, True)
+    frames.append(pd.DataFrame(data))
+  
+  # combining the raw data
+  result = pd.concat(frames)
+
+  # flow and pressure is contained as arrays, therefore we use the explode function
+  result = result.explode(["flow","pressure"])
+  return result
+
+# Loads the y data from the path given
+def load_y_data(path):
+  frames = []
+  # Extracting the raw data one at a time
+  for filename in os.listdir(path):
+    with open(path + "/" + filename, encoding='ascii', errors='ignore') as file:
+      data = pd.read_csv(file)
+    frames.append(pd.DataFrame(data))
+  
+  # combining the raw data
+  return pd.concat(frames)
+
+# A function to sort out breaths that does not match the given length
+# df           : the dataFrame
+# length       : The length of the breath in data points
+# group_key    : key to group by
+def only_specific_length(df, length, group_key = "vent_bn"):
+  return df[df.groupby(group_key)[group_key].transform('size') == length]
+
+# A function to combine breaths into a numpy array of inputs to a model that takes n breats as input
+# df           : The dataFrame
+# n            : The amount of breats in one input
+# group_key    : key to group by
+def group_in_n(df, n, group_key = "vent_bn"):
+  result = []
+  grouped = df.groupby(group_key)
+  count = 0
+  tempList = []
+  for name, group in grouped:
+    tempList.append(df[df[group_key] == name])
+    count += 1
+    if count == n - 1:
+      result.append(pd.concat(tempList).to_numpy())
+      tempList = []
+      count = 0
+  return result
+
+
