@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from ventmap.raw_utils import extract_raw
 from tslearn.barycenters import euclidean_barycenter
 from tslearn.metrics import dtw
-from ventmap.SAM import calc_inspiratory_plateau, check_if_plat_occurs, calc_resistance, _check_for_plat, calc_expiratory_plateau
+from ventmap.SAM import calc_inspiratory_plateau, check_if_plat_occurs, calc_resistance, _check_for_plat, calc_expiratory_plateau, findx02
 import numpy as np
 from collections import defaultdict
 
@@ -271,7 +271,7 @@ def add_mode_name(df):
   return new_df
 
 # Loads all the raw data from the path given
-def load_all_raw_data(path):
+def load_all_raw_data(path, explode = False):
   frames = []
   # Extracting the raw data one at a time
   for filename in os.listdir(path):
@@ -283,7 +283,8 @@ def load_all_raw_data(path):
   result = pd.concat(frames)
 
   # flow and pressure is contained as arrays, therefore we use the explode function
-  result = result.explode(["flow","pressure"])
+  if explode:
+    result = result.explode(["flow","pressure"])
   return result
 
 # Loads the y data from the path given
@@ -323,4 +324,8 @@ def group_in_n(df, n, group_key = "vent_bn"):
       count = 0
   return result
 
-
+# Adds tvi to non exploded raw data
+def add_tvi(dt):
+  newdt = dt.copy()
+  newdt["tvi"] = newdt.apply(lambda x : findx02(x["flow"], x["dt"])[2], axis = 1)
+  return newdt
