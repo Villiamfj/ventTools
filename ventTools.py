@@ -10,6 +10,7 @@ from tslearn.metrics import dtw
 from ventmap.SAM import calc_inspiratory_plateau, check_if_plat_occurs, calc_resistance, _check_for_plat, calc_expiratory_plateau, findx02
 import numpy as np
 from collections import defaultdict
+import re
 
 def add_timestep(in_df, group_id):
   df = in_df.copy()
@@ -277,7 +278,9 @@ def load_all_raw_data(path, explode = False):
   for filename in os.listdir(path):
     with open(path + "/" + filename, encoding='ascii', errors='ignore') as file:
       data = extract_raw(file, True)
-    frames.append(pd.DataFrame(data))
+      data = pd.DataFrame(data)
+      data["patient"] = re.match("^[^-]*", filename)[0]
+    frames.append(data)
   
   # combining the raw data
   result = pd.concat(frames)
@@ -294,6 +297,7 @@ def load_y_data(path):
   for filename in os.listdir(path):
     with open(path + "/" + filename, encoding='ascii', errors='ignore') as file:
       data = pd.read_csv(file)
+      data["patient"] = re.match("^[^-]*", filename)[0]
     frames.append(pd.DataFrame(data))
   
   # combining the raw data
@@ -310,7 +314,7 @@ def only_specific_length(df, length, group_key = "vent_bn"):
 # df           : The dataFrame
 # n            : The amount of breats in one input
 # group_key    : key to group by
-def group_in_n(df, n, group_key = "vent_bn"):
+def group_in_n(df, n, group_key = ["patient", "vent_bn", "rel_bn"]):
   result = []
   grouped = df.groupby(group_key)
   count = 0
@@ -319,7 +323,7 @@ def group_in_n(df, n, group_key = "vent_bn"):
     tempList.append(df[df[group_key] == name])
     count += 1
     if count == n - 1:
-      result.append(pd.concat(tempList).to_numpy())
+      result.append(pd.concat(tempList).drop(columns = group_key).to_numpy())
       tempList = []
       count = 0
   return result
@@ -329,3 +333,50 @@ def add_tvi(dt):
   newdt = dt.copy()
   newdt["tvi"] = newdt.apply(lambda x : findx02(x["flow"], x["dt"])[2], axis = 1)
   return newdt
+
+def only_specified_length_unexploded(df, n):
+  return df[df['flow'].map(len) == n]
+
+# explodes the raw data into columns
+def explode_into_column(df, n):
+  frames = []
+  frames.append(pd.DataFrame(df["flow"].to_list(), columns = ["flow" + str(i) for i in range(0,188)], index = df.index ))
+  frames.append(pd.DataFrame(df["pressure"].to_list(), columns = ["pressure" + str(i) for i in range(0,188)], index = df.index ))
+  frames.append(df)
+  return pd.concat(frames, axis = 1)
+
+
+# Modified determine mode function
+# Source : https://github.com/hahnicity/ventmode/blob/afa6ccb5eb9d64a591307a316de1e3e496c9231d/ventmode/datasets.py#L59
+def add_mode(y_data):
+  try:
+    y_data.simv
+  except AttributeError:
+    y_data['simv'] = np.nan
+  try:
+    y_data.pav
+  except AttributeError:
+    y_data['pav'] = np.nan
+  
+  mode = []
+  for i, row in y_data.iterrows():
+                if row.vc == 1:
+                    mode.append(0)
+                elif row.pc == 1:
+                    mode.append(1)
+                elif row.prvc == 1:
+                    mode.append(2)
+                elif row.ps == 1:
+                    mode.append(3)
+                elif row.cpap_sbt == 1:
+                    mode.append(4)
+                elif row.simv == 1:
+                    mode.append(5)
+                elif row.pav == 1:
+                    mode.append(6)
+                else:
+                    mode.append(7)
+  new_y_data = y_data.copy()
+  new_y_data.insert(0, "mode", mode)
+  new_y_data = new_y_data.drop(["pav", "simv", "cpap_sbt", "ps", "prvc", "pc", "vc", "other"], axis = 1)
+  return new_y_data

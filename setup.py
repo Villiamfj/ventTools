@@ -11,6 +11,6 @@ setup(
         "ventmode"
     ],
     dependency_links=[
-        "git+https://github.com/hahnicity/ventmode"
+        "git+https://github.com/hahnicity/ventmode.git"
     ]
 )
