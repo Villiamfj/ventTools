@@ -10,6 +10,6 @@ setup(
         'ventmap'
     ],
     dependency_links=[
-        "https://github.com/hahnicity/ventmode.git"
+        "https://github.com/hahnicity/ventmode/tarball/master"
     ]
 )
