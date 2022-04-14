@@ -379,7 +379,9 @@ def add_mode(y_data):
   new_y_data = y_data.copy()
   new_y_data.insert(0, "mode", mode)
   new_y_data = new_y_data.drop(["pav", "simv", "cpap_sbt", "ps", "prvc", "pc", "vc", "other"], axis = 1)
-  return new_y_data# converts flow and pressure to a fixed length n
+  return new_y_data
+
+# converts flow and pressure to a fixed length n
 # converts flow and pressure to a fixed length n
 # unexploded_df : Dataframe where flow and pressure are arrays
 # n             : The desired length
