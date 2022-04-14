@@ -396,3 +396,13 @@ def convert_to_fixed_length(unexploded_df,n):
   return result
 
 # A function to get a numpy array from groupings based on the group_key
+# code from https://asifr.com/transform-grouped-dataframe-to-numpy
+# df        : DataFrame
+# values    : labels of the values wanted fx. ["pressure","flow"]
+# group_key : the element(s) to groupby
+def np_grouped(df, values, group_key = ["patient", "vent_bn", "rel_bn"]):
+  xt = df.loc[:,values].values
+  g = df.reset_index(drop=True).groupby(group_key)
+  xtg = [xt[i.values,:] for k,i in g.groups.items()]
+  return np.array(xtg)
+
