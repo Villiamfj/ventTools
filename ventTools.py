@@ -382,7 +382,6 @@ def add_mode(y_data):
   return new_y_data
 
 # converts flow and pressure to a fixed length n
-# converts flow and pressure to a fixed length n
 # unexploded_df : Dataframe where flow and pressure are arrays
 # n             : The desired length
 def convert_to_fixed_length(unexploded_df,n):
