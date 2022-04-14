@@ -406,3 +406,10 @@ def np_grouped(df, values, group_key = ["patient", "vent_bn", "rel_bn"]):
   xtg = [xt[i.values,:] for k,i in g.groups.items()]
   return np.array(xtg)
 
+# Gets a specific value of each breath
+# df        : DataFrame
+# y_label   : the label of the desired value
+# group_key : the element(s) to groupby
+def get_y_series(df, y_label, group_key = ["patient", "vent_bn", "rel_bn"]):
+  grouped = df.groupby(group_key)
+  return np.array([i[y_label].values[0] for k, i in grouped])
