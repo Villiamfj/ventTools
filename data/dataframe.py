@@ -1,68 +1,17 @@
+
 from ventmode import datasets
 import pandas as pd
-from ventmode import constants
 import os
-from os.path import dirname, join
+from os.path import join
 import matplotlib.pyplot as plt
 from ventmap.raw_utils import extract_raw
-from tslearn.barycenters import euclidean_barycenter
-from tslearn.metrics import dtw
-from ventmap.SAM import calc_inspiratory_plateau, check_if_plat_occurs, calc_resistance, _check_for_plat, calc_expiratory_plateau, findx02
+from ventmap.SAM import calc_inspiratory_plateau, findx02
 import numpy as np
 from collections import defaultdict
 import re
 
-def add_timestep(in_df, group_id):
-  df = in_df.copy()
-  df["temp_index"] = np.arange(len(df))  
-  df["timestep"] = 0
 
-  for id in df[group_id].unique():
-    length = len(df[df[group_id] == id])
-    df.loc[df[group_id] == id, "temp_index"] = np.arange(length)
-    df["timestep"] = (df["temp_index"] + 1) / 50
 
-  del df["temp_index"]
-  return df
-
-def add_compliance(df):
-  df_out = df.copy()
-  df_out["c_dyn"] = df_out["tvi"] / df_out["pip_min_peep"]
-  return df_out
-
-def add_volume(df):
-  df_out = df.copy()
-  df_out["volume"] = df_out["flow"] * df_out["timestep"]
-  return df_out
-
-def high_pressure_breaths(df_in, group_id, max_p = 30):
-  
-  bn_group = df_in.groupby(group_id)
-  df_list = []
-  i = 0
-  j = 0
-
-  for bn, group in bn_group:
-    i += 1
-    max = df_in[df_in[group_id] == bn]["pressure"].max()
-    if  max >= max_p:
-      j += 1
-      df_list.append(df_in[df_in[group_id] == bn])
-
-  new_df = pd.concat(df_list, ignore_index=True)
-  print("breaths with p >= 30: ", j, " Total breaths: ", i)
-  return new_df
-
-# Resistance function that uess the function from ventMap.SAM
-def add_resistance(df):
-  grouped = df.groupby(["vent_bn"])
-  df["resistance"] = df.apply( lambda x: calc_resistance(x["pif"], x["pip"], x["plat"]), axis = 1)
-
-# Adds pip and pif for each breath
-def add_pip_and_pif(df):
-  grouped = df.groupby(["vent_bn"])
-  df["pif"] = df.apply(lambda x: grouped.get_group(x["vent_bn"])["flow"].max(), axis = 1)
-  df["pip"] = df.apply(lambda x: grouped.get_group(x["vent_bn"])["pressure"].max(), axis = 1)
 
 def load_vwd_patients(fileset, plateau_patients):
   raw_wvd_df = []
@@ -101,6 +50,9 @@ def load_full_plateau_dataset():
 
   raw_vwd_df = load_vwd_patients(fileset, set(train_df['patient']))
   return get_plateau_df(raw_vwd_df, train_df)
+
+
+
 
 def add_pip_min_plat(df):
   dfCopy = df.copy()
@@ -255,21 +207,7 @@ def plot_features_of_breath(df, vent_bn, viz_features, tabel_features = None, sa
   
   plt.show()
 
-def get_name_of_mode(number):
-  switcher = {
-   0: "Ventilation Control",
-   1: "Pressure Control",
-   3: "Pressure Support",
-   4: "Continuous positive airway pressure",
-   6: "Proportional assist ventilation"
-  }
-  return switcher.get(number, "ERROR")
 
-
-def add_mode_name(df):
-  new_df = df.copy()
-  new_df["mode_name"] = new_df["y"].apply(get_name_of_mode)
-  return new_df
 
 # Loads all the raw data from the path given
 def load_all_raw_data(path, explode = False):
@@ -302,6 +240,51 @@ def load_y_data(path):
   
   # combining the raw data
   return pd.concat(frames)
+# explodes the raw data into columns
+def explode_into_column(df, n):
+  frames = []
+  frames.append(pd.DataFrame(df["flow"].to_list(), columns = ["flow" + str(i) for i in range(0,188)], index = df.index ))
+  frames.append(pd.DataFrame(df["pressure"].to_list(), columns = ["pressure" + str(i) for i in range(0,188)], index = df.index ))
+  frames.append(df)
+  return pd.concat(frames, axis = 1)
+
+
+
+# A function to get a numpy array from groupings based on the group_key
+# code from https://asifr.com/transform-grouped-dataframe-to-numpy
+# df        : DataFrame
+# values    : labels of the values wanted fx. ["pressure","flow"]
+# group_key : the element(s) to groupby
+def np_grouped(df, values, group_key = ["patient", "vent_bn", "rel_bn"]):
+  xt = df.loc[:,values].values
+  g = df.reset_index(drop=True).groupby(group_key)
+  xtg = [xt[i.values,:] for k,i in g.groups.items()]
+  return np.array(xtg)
+
+# Gets a specific value of each breath
+# df        : DataFrame
+# y_label   : the label of the desired value
+# group_key : the element(s) to groupby
+def get_y_series(df, y_label, group_key = ["patient", "vent_bn", "rel_bn"]):
+  grouped = df.groupby(group_key)
+  return np.array([i[y_label].values[0] for k, i in grouped])
+
+
+def get_name_of_mode(number):
+  switcher = {
+   0: "Ventilation Control",
+   1: "Pressure Control",
+   3: "Pressure Support",
+   4: "Continuous positive airway pressure",
+   6: "Proportional assist ventilation"
+  }
+  return switcher.get(number, "ERROR")
+
+
+def add_mode_name(df):
+  new_df = df.copy()
+  new_df["mode_name"] = new_df["y"].apply(get_name_of_mode)
+  return new_df
 
 # A function to sort out breaths that does not match the given length
 # df           : the dataFrame
@@ -336,14 +319,6 @@ def add_tvi(dt):
 
 def only_specified_length_unexploded(df, n):
   return df[df['flow'].map(len) == n]
-
-# explodes the raw data into columns
-def explode_into_column(df, n):
-  frames = []
-  frames.append(pd.DataFrame(df["flow"].to_list(), columns = ["flow" + str(i) for i in range(0,188)], index = df.index ))
-  frames.append(pd.DataFrame(df["pressure"].to_list(), columns = ["pressure" + str(i) for i in range(0,188)], index = df.index ))
-  frames.append(df)
-  return pd.concat(frames, axis = 1)
 
 
 # Modified determine mode function
@@ -380,38 +355,3 @@ def add_mode(y_data):
   new_y_data.insert(0, "mode", mode)
   new_y_data = new_y_data.drop(["pav", "simv", "cpap_sbt", "ps", "prvc", "pc", "vc", "other"], axis = 1)
   return new_y_data
-
-# converts flow and pressure to a fixed length n
-# unexploded_df : Dataframe where flow and pressure are arrays
-# n             : The desired length
-def convert_to_fixed_length(unexploded_df,n):
-  def fix_length(array):
-    if len(array) < n:
-      return np.pad(array, (0,n - len(array)))
-    if len(array) > n:
-      return array[0 : n]
-    return array
-
-  result = unexploded_df.copy()
-  result.flow = result.flow.map(fix_length)
-  result.pressure = result.pressure.map(fix_length)
-  return result
-
-# A function to get a numpy array from groupings based on the group_key
-# code from https://asifr.com/transform-grouped-dataframe-to-numpy
-# df        : DataFrame
-# values    : labels of the values wanted fx. ["pressure","flow"]
-# group_key : the element(s) to groupby
-def np_grouped(df, values, group_key = ["patient", "vent_bn", "rel_bn"]):
-  xt = df.loc[:,values].values
-  g = df.reset_index(drop=True).groupby(group_key)
-  xtg = [xt[i.values,:] for k,i in g.groups.items()]
-  return np.array(xtg)
-
-# Gets a specific value of each breath
-# df        : DataFrame
-# y_label   : the label of the desired value
-# group_key : the element(s) to groupby
-def get_y_series(df, y_label, group_key = ["patient", "vent_bn", "rel_bn"]):
-  grouped = df.groupby(group_key)
-  return np.array([i[y_label].values[0] for k, i in grouped])

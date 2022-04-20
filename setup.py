@@ -7,9 +7,11 @@ setup(
         'prettytable',
         'scipy',
         'scikit-learn',
-        'ventmap'
+        'ventmap',
+        "tensorflow"
     ],
     dependency_links=[
-        "https://github.com/hahnicity/ventmode/tarball/master"
+        "https://github.com/hahnicity/ventmode/tarball/master",
+        "https://github.com/hahnicity/ventmap/tarball/master"
     ]
 )
