@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from .utils import _float_feature, _floatList_feature, _int64_feature, convert_to_fixed_length, get_train_val_filter, recover
-
+from .constants import mode_to_index
 # defining features of record
 def map_fn(serialized_example):
     feature = {
@@ -60,7 +60,10 @@ def write_as_record(file_link, record_name):
   data_np["flow"] = data_np["flow"].apply(literal_eval) # The csv reader from pandas reads them as strings
   data_np["pressure"] = data_np["pressure"].apply(literal_eval)
   data_np = convert_to_fixed_length(data_np, 200)
-  #data_np = data_np.explode(["flow", "pressure"])
+  
+  # # filtering classes
+  data_np = data_np[data_np['y'].isin(mode_to_index.keys())]
+  data_np['y'] = data_np['y'].apply(lambda x: mode_to_index[x])
   data_np = data_np.to_numpy()
 
   # Writing rfRecord
