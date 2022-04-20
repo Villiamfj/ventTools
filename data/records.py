@@ -54,26 +54,27 @@ def load_test_set(path, batch = 256, *args, **kwargs):
 def write_as_record(file_link, record_name):
   #if file_link != None:
   #  file_csv = tf.keras.utils.get_file("data_raw", file_link, extract=True)
-  data_csv = pd.read_csv(file_link)
+    data_csv = pd.read_csv(file_link)
 
-  data_np = data_csv[["flow", "pressure", "y"]]
-  data_np["flow"] = data_np["flow"].apply(literal_eval) # The csv reader from pandas reads them as strings
-  data_np["pressure"] = data_np["pressure"].apply(literal_eval)
-  data_np = convert_to_fixed_length(data_np, 200)
-  
-  # # filtering classes
-  data_np = data_np[data_np['y'].isin(mode_to_index.keys())]
-  data_np['y'] = data_np['y'].apply(lambda x: mode_to_index[x])
-  data_np = data_np.to_numpy()
+    data_np = data_csv[["flow", "pressure", "y"]]
+    data_np["flow"] = data_np["flow"].apply(literal_eval) # The csv reader from pandas reads them as strings
+    data_np["pressure"] = data_np["pressure"].apply(literal_eval)
+    data_np = convert_to_fixed_length(data_np, 200)
+
+    # # filtering classes
+    data_np = data_np[data_np['y'].isin(mode_to_index.keys())]
+    data_np['y'] = data_np['y'].apply(lambda x: mode_to_index[x])
+    data_np = data_np.to_numpy()
 
   # Writing rfRecord
-  with tf.io.TFRecordWriter(record_name + '.tfrecord') as tfrecord:
-   for idx in range(data_np.shape[0]):
-     features = {
-         'label'    : _int64_feature(idx),      #tf.train.Feature(int64_list=tf.train.Int64List(value=label)),
-         'flow'     : _floatList_feature(np.array(data_np[idx][0])),
-         'pressure' : _floatList_feature(np.array(data_np[idx][1])),
-         'y'        : _float_feature(data_np[idx][2]) #tf.train.Feature(int64_list= tf.train.FloatList(value = feature))
-     }
-     example = tf.train.Example(features = tf.train.Features(feature=features))
-     tfrecord.write(example.SerializeToString())
+    with tf.io.TFRecordWriter(f'{record_name}.tfrecord') as tfrecord:
+        for idx in range(data_np.shape[0]):
+            features = {
+                'label'    : _int64_feature(idx),      #tf.train.Feature(int64_list=tf.train.Int64List(value=label)),
+                'flow'     : _floatList_feature(np.array(data_np[idx][0])),
+                'pressure' : _floatList_feature(np.array(data_np[idx][1])),
+                'y'        : _float_feature(data_np[idx][2]) #tf.train.Feature(int64_list= tf.train.FloatList(value = feature))
+            }
+            example = tf.train.Example(features = tf.train.Features(feature=features))
+            tfrecord.write(example.SerializeToString())
+    return f'{record_name}.tfrecord'
