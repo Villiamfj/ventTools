@@ -24,6 +24,7 @@ def load_vwd_patients(fileset, plateau_patients):
     raw_wvd_df.append(pd.DataFrame(data))
   return pd.concat(raw_wvd_df)
 
+
 def get_plateau_df(raw_wvd_df, train_df):
   # Calculate plateau
   raw_wvd_df['plat_temp'] = raw_wvd_df.apply(lambda x: calc_inspiratory_plateau(x['flow'], x['pressure'], dt=0.02, min_time=.2), axis=1)
@@ -38,6 +39,7 @@ def get_plateau_df(raw_wvd_df, train_df):
   plateau_df = plateau_df.drop(['plat_temp'], axis=1)
   return plateau_df.dropna()
 
+
 def load_full_plateau_dataset():
   #Creates the fileset and final featureset
   DERIVATION_COHORT_X_DIR = join("ventmode/anon_train_data", "raw_vwd")
@@ -50,7 +52,6 @@ def load_full_plateau_dataset():
 
   raw_vwd_df = load_vwd_patients(fileset, set(train_df['patient']))
   return get_plateau_df(raw_vwd_df, train_df)
-
 
 
 
