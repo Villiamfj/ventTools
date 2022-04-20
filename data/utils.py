@@ -66,7 +66,7 @@ def convert_to_fixed_length(unexploded_df,n):
 def get_train_val_filter(split):
     
     val_filter = lambda x, _: x % split == 0
-    train_filter = lambda x, _: not val_filter(x. _)
+    train_filter = lambda x, _: not val_filter(x, _)
     
     return train_filter, val_filter
 
