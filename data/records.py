@@ -1,6 +1,5 @@
-from sklearn import datasets
 import tensorflow as tf
-from utils import get_train_val_filter, recover
+from .utils import get_train_val_filter, recover
 
 # defining features of record
 def map_fn(serialized_example):
